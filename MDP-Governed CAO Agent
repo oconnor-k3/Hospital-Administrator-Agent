@@ -1,1 +1,228 @@
+"""Hospital resource-allocation MDP (Gymnasium-style API, no dependency on it).
+
+Decision structure
+------------------
+Each tick (1 simulated hour) the agent may make several decisions:
+  action k in [0, K)  -> start treating the k-th waiting patient (arrival order)
+  action K            -> end turn: advance time by one tick
+Assigning a patient does not advance time, so the agent can start several
+patients in one tick. Invalid assignments (empty slot, not enough resources)
+are ignored and cost a small penalty. Reward is paid when time advances.
+
+Slot ordering is set by HospitalConfig.queue_order ("arrival" or "acuity").
+Pass record_history=True to log one record per tick in env.history.
+"""
+import numpy as np
+
+from .config import HospitalConfig
+from .patient import Patient
+from .rewards import get_reward_fn
+
+
+class HospitalEnv:
+    def __init__(self, config: HospitalConfig = None, seed: int = None,
+                 record_history: bool = False):
+        self.cfg = config or HospitalConfig()
+        self.record_history = record_history
+        self.history = []
+        self.K = self.cfg.queue_view
+        self.n_actions = self.K + 1
+        self.obs_dim = 5 + 3 * self.K
+        self.reward_fn = get_reward_fn(self.cfg.objective)
+        self.rng = np.random.default_rng(seed)
+
+    # ------------------------------------------------------------------ API
+    def reset(self, seed: int = None):
+        if seed is not None:
+            self.rng = np.random.default_rng(seed)
+        c = self.cfg
+        self.t = 0
+        self.queue = []          # waiting, in arrival order
+        self.in_treatment = []
+        self.free = [c.n_doctors, c.n_nurses, c.n_beds]
+        self._next_id = 0
+        self._decisions = 0
+        self._tick_events = self._new_events()
+        self.history = []
+        self.stats = {
+            "arrived": 0, "discharged": [0, 0, 0], "deaths": 0, "deteriorations": 0,
+            "wait_at_start_sum": 0, "started": 0,
+            "doc_busy": 0, "bed_busy": 0, "queue_sum": 0, "ticks": 0,
+        }
+        self._arrivals()
+        return self._obs(), self._info()
+
+    def step(self, action: int):
+        action = int(action)
+        self._decisions += 1
+        force_advance = self._decisions >= self.cfg.max_decisions_per_tick
+
+        if action != self.K and not force_advance:
+            mask = self.action_mask()
+            if not (0 <= action < self.K) or not mask[action]:
+                return self._obs(), -self.cfg.invalid_action_penalty, False, False, self._info(invalid=True)
+            self._start_treatment(self._view()[action])
+            return self._obs(), 0.0, False, False, self._info()
+
+        reward = self._advance()
+        terminated = self.t >= self.cfg.horizon
+        return self._obs(), reward, terminated, False, self._info()
+
+    # -------------------------------------------------------- observations
+    def _view(self):
+        """The K actionable waiting patients, in slot order."""
+        if self.cfg.queue_order == "acuity":
+            ordered = sorted(self.queue, key=lambda p: (-p.acuity, -p.wait, p.pid))
+            return ordered[: self.K]
+        return self.queue[: self.K]
+
+    def action_mask(self):
+        mask = np.zeros(self.n_actions, dtype=bool)
+        for k, p in enumerate(self._view()):
+            mask[k] = self._can_start(p)
+        mask[self.K] = True
+        return mask
+
+    def visible_queue(self):
+        return self._view()
+
+    def tabular_state(self, max_count: int = 3):
+        """Small hashable state for tabular Q-learning: free (doctors, nurses,
+        beds) plus waiting counts per acuity, each capped at max_count."""
+        counts = [0, 0, 0]
+        for p in self.queue:
+            counts[p.acuity] += 1
+        return (*self.free, *(min(c, max_count) for c in counts))
+
+    def render_text(self):
+        """Human-readable snapshot for debugging."""
+        c = self.cfg
+        names = ("L", "M", "C")
+        waiting = " ".join(f"{names[p.acuity]}{p.wait}" for p in self.queue[:30])
+        more = f" (+{len(self.queue) - 30} more)" if len(self.queue) > 30 else ""
+        treating = " ".join(f"{names[p.acuity]}:{p.remaining}" for p in self.in_treatment)
+        return (f"t={self.t:>3}  free D{self.free[0]}/{c.n_doctors} N{self.free[1]}/{c.n_nurses} "
+                f"B{self.free[2]}/{c.n_beds}\n"
+                f"  waiting[{len(self.queue)}]: {waiting}{more}\n"
+                f"  in care[{len(self.in_treatment)}]: {treating}")
+
+    def _obs(self):
+        c = self.cfg
+        o = np.zeros(self.obs_dim, dtype=np.float32)
+        o[0] = self.free[0] / max(c.n_doctors, 1)
+        o[1] = self.free[1] / max(c.n_nurses, 1)
+        o[2] = self.free[2] / max(c.n_beds, 1)
+        o[3] = self.t / c.horizon
+        o[4] = min(len(self.queue), 50) / 50.0
+        for k, p in enumerate(self.queue[: self.K]):
+            base = 5 + 3 * k
+            o[base] = 1.0                          # slot occupied
+            o[base + 1] = p.acuity / 2.0
+            o[base + 2] = min(p.wait, 24) / 24.0
+        return o
+
+    def _info(self, invalid=False):
+        return {"action_mask": self.action_mask(), "t": self.t,
+                "queue_len": len(self.queue), "invalid": invalid}
+
+    # ------------------------------------------------------------ dynamics
+    @staticmethod
+    def _new_events():
+        return {"started": [], "discharged": [], "deaths": [], "deteriorated": []}
+
+    def _can_start(self, p):
+        req = self.cfg.requirements[p.acuity]
+        return all(f >= r for f, r in zip(self.free, req))
+
+    def _start_treatment(self, p):
+        req = self.cfg.requirements[p.acuity]
+        for i in range(3):
+            self.free[i] -= req[i]
+        p.held = tuple(req)
+        mean = self.cfg.mean_duration[p.acuity]
+        p.remaining = max(1, 1 + int(self.rng.poisson(max(mean - 1.0, 0.0))))
+        p.start_t = self.t
+        self.queue.remove(p)
+        self.in_treatment.append(p)
+        self.stats["started"] += 1
+        self.stats["wait_at_start_sum"] += p.wait
+        self._tick_events["started"].append(p)
+
+    def _advance(self):
+        c, ev = self.cfg, self._tick_events
+        # utilisation snapshot (resources held during this tick)
+        self.stats["doc_busy"] += (c.n_doctors - self.free[0]) / max(c.n_doctors, 1)
+        self.stats["bed_busy"] += (c.n_beds - self.free[2]) / max(c.n_beds, 1)
+        self.stats["queue_sum"] += len(self.queue)
+        self.stats["ticks"] += 1
+
+        # treatment progresses; finished patients release resources
+        for p in list(self.in_treatment):
+            p.remaining -= 1
+            if p.remaining <= 0:
+                for i in range(3):
+                    self.free[i] += p.held[i]
+                self.in_treatment.remove(p)
+                ev["discharged"].append(p)
+                self.stats["discharged"][p.acuity] += 1
+
+        # waiting patients get worse, critical patients may die
+        for p in list(self.queue):
+            p.wait += 1
+            p.level_wait += 1
+            if p.level_wait >= c.deteriorate_after[p.acuity]:
+                if p.acuity == 2:
+                    self.queue.remove(p)
+                    ev["deaths"].append(p)
+                    self.stats["deaths"] += 1
+                else:
+                    p.acuity += 1
+                    p.level_wait = 0
+                    ev["deteriorated"].append(p)
+                    self.stats["deteriorations"] += 1
+
+        self.t += 1
+        self._arrivals()
+        reward = float(self.reward_fn(self, ev))
+        if self.record_history:
+            counts = [0, 0, 0]
+            for p in self.queue:
+                counts[p.acuity] += 1
+            self.history.append({
+                "t": self.t, "reward": reward, "queue_len": len(self.queue),
+                "queue_low": counts[0], "queue_medium": counts[1], "queue_critical": counts[2],
+                "doctors_busy": c.n_doctors - self.free[0],
+                "nurses_busy": c.n_nurses - self.free[1],
+                "beds_busy": c.n_beds - self.free[2],
+                "started": len(ev["started"]), "discharged": len(ev["discharged"]),
+                "deaths": len(ev["deaths"]), "deteriorated": len(ev["deteriorated"]),
+            })
+        self._tick_events = self._new_events()
+        self._decisions = 0
+        return reward
+
+    def _arrivals(self):
+        c = self.cfg
+        lam = c.arrival_rate * (1 + c.diurnal_amplitude * np.sin(2 * np.pi * (self.t % 24) / 24))
+        for _ in range(int(self.rng.poisson(max(lam, 0.0)))):
+            acuity = int(self.rng.choice(3, p=c.acuity_probs))
+            self.queue.append(Patient(self._next_id, acuity, self.t))
+            self._next_id += 1
+            self.stats["arrived"] += 1
+
+    # ------------------------------------------------------------- metrics
+    def summary(self):
+        s = self.stats
+        started = max(s["started"], 1)
+        ticks = max(s["ticks"], 1)
+        return {
+            "arrived": s["arrived"],
+            "treated": sum(s["discharged"]),
+            "deaths": s["deaths"],
+            "deteriorations": s["deteriorations"],
+            "mean_wait": s["wait_at_start_sum"] / started,
+            "doctor_util": s["doc_busy"] / ticks,
+            "bed_util": s["bed_busy"] / ticks,
+            "mean_queue": s["queue_sum"] / ticks,
+        }
 Enter code for MDP agent here
