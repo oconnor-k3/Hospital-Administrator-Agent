@@ -1,1 +1,8 @@
-placeholder
+# Bigger hospital, proportionally higher load (tests transfer across capacity).
+n_doctors: 10
+n_nurses: 16
+n_beds: 22
+arrival_rate: 2.6
+horizon: 168
+queue_view: 12
+queue_order: arrival
