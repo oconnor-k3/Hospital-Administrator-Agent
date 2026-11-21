@@ -1,1 +1,8 @@
-
+# Default community hospital.
+n_doctors: 4
+n_nurses: 6
+n_beds: 8
+arrival_rate: 1.0
+horizon: 168
+queue_view: 10
+queue_order: arrival
