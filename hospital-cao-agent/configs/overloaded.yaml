@@ -1,1 +1,2 @@
-
+# Stress test: demand exceeds capacity, where naive acuity-first collapses.
+arrival_rate: 1.5
