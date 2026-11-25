@@ -2,11 +2,6 @@
 
     python scripts/demo_episode.py --policy acuity_first --config configs/overloaded.yaml
 """
-
-# ---------------------------------------------------------------------------
-# Generative AI disclosure: Claude (Anthropic) was used to help draft the code in this project, as well as debugging syntax issues if the code broke.# 
-# ---------------------------------------------------------------------------
-
 import argparse
 import sys
 from pathlib import Path
@@ -43,4 +38,3 @@ print("\nSummary:", {k: round(v, 2) for k, v in env.summary().items()}, f"return
 out = ROOT / "results" / "figures" / f"episode_{args.policy}_seed{args.seed}.png"
 plot_episode(env.history, cfg, out, title=f"{args.policy} | {cfg.objective} | arrival {cfg.arrival_rate}")
 print("Saved plot:", out.relative_to(ROOT))
-
