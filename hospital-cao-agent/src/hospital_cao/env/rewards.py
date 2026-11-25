@@ -2,6 +2,10 @@
 patients that were started / discharged / died / deteriorated during the tick
 that just elapsed. Swap objectives by changing HospitalConfig.objective."""
 
+# ---------------------------------------------------------------------------
+# Generative AI disclosure: Claude (Anthropic) was used to help draft the code in this project, as well as debugging syntax issues if the code broke.# 
+# ---------------------------------------------------------------------------
+
 ACUITY_WEIGHT = (1.0, 3.0, 10.0)
 
 
