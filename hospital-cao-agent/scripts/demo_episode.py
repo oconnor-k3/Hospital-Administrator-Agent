@@ -2,6 +2,10 @@
 
     python scripts/demo_episode.py --policy acuity_first --config configs/overloaded.yaml
 """
+# ---------------------------------------------------------------------------
+# Generative AI disclosure: Claude (Anthropic) was used to help draft the code in this project, as well as debugging syntax issues if the code broke.# 
+# ---------------------------------------------------------------------------
+
 import argparse
 import sys
 from pathlib import Path
