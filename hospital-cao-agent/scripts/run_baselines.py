@@ -3,6 +3,11 @@
     python scripts/run_baselines.py
     python scripts/run_baselines.py --config configs/overloaded.yaml --episodes 50
 """
+
+# ---------------------------------------------------------------------------
+# Generative AI disclosure: Claude (Anthropic) was used to help draft the code in this project, as well as debugging syntax issues if the code broke.# 
+# ---------------------------------------------------------------------------
+
 import argparse
 import sys
 from pathlib import Path
