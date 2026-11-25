@@ -2,6 +2,11 @@
 visible waiting patients that can start right now, one by its own rule; if
 none can start it ends the turn. Rules use patient attributes, not slot
 position, so results don't depend on HospitalConfig.queue_order."""
+
+# ---------------------------------------------------------------------------
+# Generative AI disclosure: Claude (Anthropic) was used to help draft the code in this project, as well as debugging syntax issues if the code broke.# 
+# ---------------------------------------------------------------------------
+
 import numpy as np
 
 
