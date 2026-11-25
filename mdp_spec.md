@@ -1,6 +1,9 @@
 # MDP Specification (prototype v0.1)
 
-Everything below is implemented in `src/hospital_cao/env/`. Treat it as a draft to argue about, not a final design.
+Everything below is implemented in `src/hospital_cao/env/`.
+# ---------------------------------------------------------------------------
+# Generative AI disclosure: Claude (Anthropic) was used to help draft the code in this file, as well as debugging syntax issues if the code broke.# 
+# ---------------------------------------------------------------------------
 
 ## Time and episode
 - 1 tick = 1 simulated hour. Episode = 168 ticks (one week). Terminates at the horizon.
