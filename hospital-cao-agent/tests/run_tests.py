@@ -15,3 +15,7 @@ for name in sorted(n for n in dir(test_env) if n.startswith("test_")):
         print(f"FAIL {name}")
         traceback.print_exc()
 sys.exit(1 if failed else 0)
+
+# ---------------------------------------------------------------------------
+# Generative AI disclosure: Claude (Anthropic) was used to help draft the code in this project, as well as debugging syntax issues if the code broke.# 
+# ---------------------------------------------------------------------------
