@@ -12,6 +12,11 @@ are ignored and cost a small penalty. Reward is paid when time advances.
 Slot ordering is set by HospitalConfig.queue_order ("arrival" or "acuity").
 Pass record_history=True to log one record per tick in env.history.
 """
+
+# ---------------------------------------------------------------------------
+# Generative AI disclosure: Claude (Anthropic) was used to help draft the code in this project, as well as debugging syntax issues if the code broke.# 
+# ---------------------------------------------------------------------------
+
 import numpy as np
 
 from .config import HospitalConfig
