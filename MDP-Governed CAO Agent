@@ -1,5 +1,9 @@
 """Hospital resource-allocation MDP (Gymnasium-style API, no dependency on it).
 
+# ---------------------------------------------------------------------------
+# Generative AI disclosure: Claude (Anthropic) was used to help draft the code in this file, as well as debugging syntax issues if the code broke.# 
+# ---------------------------------------------------------------------------
+
 Decision structure
 ------------------
 Each tick (1 simulated hour) the agent may make several decisions:
