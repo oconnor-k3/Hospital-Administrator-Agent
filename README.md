@@ -2,6 +2,10 @@
 
 Simulated hospital resource-allocation MDP for a reinforcement-learning agent. See `docs/mdp_spec.md` for state, action, transition, and reward definitions, baseline results, and known limitations.
 
+# ---------------------------------------------------------------------------
+# Generative AI disclosure: Claude (Anthropic) was used to help draft the code in this file, as well as debugging syntax issues if the code broke.# 
+# ---------------------------------------------------------------------------
+
 ## Setup
 ```
 python -m venv .venv && source .venv/bin/activate
