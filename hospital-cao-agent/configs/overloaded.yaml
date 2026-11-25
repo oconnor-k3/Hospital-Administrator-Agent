@@ -1,2 +1,6 @@
 # Stress test: demand exceeds capacity, where naive acuity-first collapses.
 arrival_rate: 1.5
+
+# ---------------------------------------------------------------------------
+# Generative AI disclosure: Claude (Anthropic) was used to help draft the code in this project, as well as debugging syntax issues if the code broke.# 
+# ---------------------------------------------------------------------------
