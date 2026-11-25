@@ -7,6 +7,11 @@ Configs can be built in code, or loaded/merged from YAML files:
     cfg = load_config("configs/small_hospital.yaml", "configs/objectives/fairness.yaml",
                       arrival_rate=1.2)      # keyword overrides win
 """
+
+# ---------------------------------------------------------------------------
+# Generative AI disclosure: Claude (Anthropic) was used to help draft the code in this project, as well as debugging syntax issues if the code broke.# 
+# ---------------------------------------------------------------------------
+
 from dataclasses import dataclass, fields, replace
 from pathlib import Path
 from typing import Tuple
