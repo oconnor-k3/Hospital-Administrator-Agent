@@ -6,3 +6,7 @@ arrival_rate: 2.6
 horizon: 168
 queue_view: 12
 queue_order: arrival
+
+# ---------------------------------------------------------------------------
+# Generative AI disclosure: Claude (Anthropic) was used to help draft the code in this project, as well as debugging syntax issues if the code broke.# 
+# ---------------------------------------------------------------------------
