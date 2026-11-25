@@ -6,3 +6,7 @@ arrival_rate: 0.6
 horizon: 48
 queue_view: 3
 queue_order: acuity        # slot 0 = sickest, so actions mean "treat the k-th most urgent
+
+# ---------------------------------------------------------------------------
+# Generative AI disclosure: Claude (Anthropic) was used to help draft the code in this project, as well as debugging syntax issues if the code broke.# 
+# ---------------------------------------------------------------------------
