@@ -1,3 +1,7 @@
+# ---------------------------------------------------------------------------
+# Generative AI disclosure: Claude (Anthropic) was used to help draft the code in this project, as well as debugging syntax issues if the code broke.# 
+# ---------------------------------------------------------------------------
+
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
