@@ -1,6 +1,9 @@
 from hospital_cao.env import HospitalEnv, HospitalConfig
 from hospital_cao.baselines import ALL_BASELINES
 
+# ---------------------------------------------------------------------------
+# Generative AI disclosure: Claude (Anthropic) was used to help draft the code in this project, as well as debugging syntax issues if the code broke.# 
+# ---------------------------------------------------------------------------
 
 def test_resources_conserved_and_nonnegative():
     env = HospitalEnv(HospitalConfig(), seed=0)
